@@ -91,6 +91,7 @@ impl App {
         let entry = Entry::new(loader).map_err(|e| anyhow!("{}", e))?;
         let mut data = AppData::default();
         let instance = create_vk_instance(window, &entry, &mut data)?;
+
         data.surface = vk_window::create_surface(&instance, &window, &window)?;
 
         pick_physical_device(&instance, &mut data)?;
@@ -230,6 +231,14 @@ unsafe fn create_vk_instance(
 }
 
 //==========================
+// Pipeline
+//=========================
+
+unsafe fn create_pipeline(device: &Device, data: &mut AppData) -> Result<()> {
+    Ok(())
+}
+
+//==========================
 // Logical Device
 //==========================
 
@@ -297,19 +306,19 @@ use thiserror::Error;
 pub struct SuitabilityError(pub &'static str);
 
 unsafe fn pick_physical_device(instance: &Instance, data: &mut AppData) -> Result<()> {
-    for pd in instance.enumerate_physical_devices()? {
-        let props = instance.get_physical_device_properties(pd);
+    for physical_device in instance.enumerate_physical_devices()? {
+        let props = instance.get_physical_device_properties(physical_device);
 
         info!("Checking physical device: (`{}`)", props.device_name);
 
-        if let Err(error) = check_physical_device(instance, data, pd) {
+        if let Err(error) = check_physical_device(instance, data, physical_device) {
             warn!(
                 "Skipping physical device (`{}`): {}",
                 props.device_name, error
             );
         } else {
             info!("Selected physical device: (`{}`)", props.device_name);
-            data.physical_device = pd;
+            data.physical_device = physical_device;
             return Ok(());
         }
     }
@@ -335,10 +344,10 @@ unsafe fn check_physical_device(
 
 unsafe fn check_physical_device_extensions(
     instance: &Instance,
-    pd: vk::PhysicalDevice,
+    physical_device: vk::PhysicalDevice,
 ) -> Result<()> {
     let extensions = instance
-        .enumerate_device_extension_properties(pd, None)?
+        .enumerate_device_extension_properties(physical_device, None)?
         .iter()
         .map(|e| e.extension_name)
         .collect::<HashSet<_>>();
@@ -408,13 +417,18 @@ struct SwapchainSupport {
 }
 
 impl SwapchainSupport {
-    unsafe fn get(instance: &Instance, data: &AppData, pd: vk::PhysicalDevice) -> Result<Self> {
+    unsafe fn get(
+        instance: &Instance,
+        data: &AppData,
+        physical_device: vk::PhysicalDevice,
+    ) -> Result<Self> {
         Ok(Self {
             capabilities: instance
-                .get_physical_device_surface_capabilities_khr(pd, data.surface)?,
-            formats: instance.get_physical_device_surface_formats_khr(pd, data.surface)?,
+                .get_physical_device_surface_capabilities_khr(physical_device, data.surface)?,
+            formats: instance
+                .get_physical_device_surface_formats_khr(physical_device, data.surface)?,
             present_modes: instance
-                .get_physical_device_surface_present_modes_khr(pd, data.surface)?,
+                .get_physical_device_surface_present_modes_khr(physical_device, data.surface)?,
         })
     }
 }
