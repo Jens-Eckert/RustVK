@@ -16,4 +16,5 @@ vulkanalia = { version = "=0.26.0", features = [
     "provisional",
     "window",
 ] }
+vulkanalia-vma = "*"
 winit = "^0.29.0"
